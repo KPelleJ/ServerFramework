@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +14,9 @@ namespace ServerFramework.TCPServer
     public abstract class AbstractTCPServer
     {
         private readonly int PORT;
+        private readonly int STOPPORT;
         protected readonly string? _serverName;
+        private bool _running = true;
 
         
         /// <param name="port">Object must come with an associated port number</param>
@@ -21,6 +24,7 @@ namespace ServerFramework.TCPServer
         public AbstractTCPServer(int port, string? name) 
         { 
             PORT = port;
+            STOPPORT = port +1;
             _serverName = name;
         }
 
@@ -29,24 +33,35 @@ namespace ServerFramework.TCPServer
         /// When a client connects a new task will be run to handle the and the specific work of the <br/> 
         /// derived classes will be executed.
         /// </summary>
-        public void Start()
+        public async Task Start()
         {
-            TcpListener listener = new(System.Net.IPAddress.Any, PORT);
+            TcpListener listener = new(IPAddress.Any, PORT);
             listener.Start();
             Console.WriteLine($"{DateTime.Now}: {_serverName} started at port: {PORT}");
 
+            Task.Run(StopServer);
 
-            while (true)
+            List<Task> tasks = new List<Task>();
+            while (_running)
             {
-                TcpClient client = listener.AcceptTcpClient();
-                Console.WriteLine($"{DateTime.Now}: Client connected:");
-                Console.WriteLine($"remote (ip, port) = ({client.Client.RemoteEndPoint})");
-
-                Task.Run(() =>
+                if (listener.Pending())
                 {
-                    TcpClient tmpClient = client;
-                    DoOneClient(client);
-                });
+                    TcpClient client = listener.AcceptTcpClient();
+                    Console.WriteLine($"{DateTime.Now}: Client connected:");
+                    Console.WriteLine($"remote (ip, port) = ({client.Client.RemoteEndPoint})");
+
+                    tasks.Add(
+                    Task.Run(() =>
+                    {
+                        TcpClient tmpClient = client;
+                        DoOneClient(client);
+                    })
+                    );
+                }
+                else
+                {
+                    Thread.Sleep(2000);
+                }
             }
         }
 
@@ -63,8 +78,28 @@ namespace ServerFramework.TCPServer
             using StreamWriter sw = new(sock.GetStream());
 
             TcpServerWork(sr, sw);
+
+            sock?.Close();
         }
 
+        protected virtual void StopServer()
+        {
+            TcpListener listener = new(IPAddress.Any, STOPPORT);
+            listener.Start();
+            Console.WriteLine($"Stop server started at port {STOPPORT}");
 
+            while (true)
+            {
+                TcpClient client = listener.AcceptTcpClient();
+                StreamReader sr = new(client.GetStream());
+                string? command = sr.ReadLine();
+
+                if (command != null && command == "stop")
+                {
+                    _running = false;
+                    return;
+                }
+            }
+        }
     }
 }
