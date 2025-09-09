@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ServerConfig>
+	<ServerPort>1000</ServerPort>
+	<ShutdownPort>1001</ShutdownPort>
+	<ServerName>Polseboden</ServerName>
+</ServerConfig>

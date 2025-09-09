@@ -8,7 +8,9 @@ namespace TCPFrameworkDemo
         {
             Console.WriteLine("Hello, World!");
 
-            MyServer server = new(7);
+            string configPath = Environment.GetEnvironmentVariable("AbstractServerConfig");
+
+            MyServer server = new(configPath + "serverconfig.xml");
 
             server.Start();
         }
