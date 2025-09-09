@@ -33,7 +33,7 @@ namespace ServerFramework.TCPServer
         /// When a client connects a new task will be run to handle the and the specific work of the <br/> 
         /// derived classes will be executed.
         /// </summary>
-        public async Task Start()
+        public void Start()
         {
             TcpListener listener = new(IPAddress.Any, PORT);
             listener.Start();
@@ -94,7 +94,7 @@ namespace ServerFramework.TCPServer
                 StreamReader sr = new(client.GetStream());
                 string? command = sr.ReadLine();
 
-                if (command != null && command == "stop")
+                if (!string.IsNullOrEmpty(command) && command == "stop")
                 {
                     _running = false;
                     return;
