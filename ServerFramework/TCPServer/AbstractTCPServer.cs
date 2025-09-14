@@ -59,20 +59,20 @@ namespace ServerFramework.TCPServer
             TcpListener listener = new(IPAddress.Any, PORT);
             listener.Start();
 
-            _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"{_serverName}");
-            _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: {_serverName} started at port: {PORT}");
+            _logger.LogInfo(_serverName ?? "Unkown Server");
+            _logger.LogServerStart(_serverName ?? "Unkown Server", PORT);
 
             Task.Run(StopServer);
 
             List<Task> tasks = new List<Task>();
             while (_running)
             {
-                _logger.Ts.Flush();
+                _logger.Flush();
                 if (listener.Pending())
                 {
                     TcpClient client = listener.AcceptTcpClient();
-                    _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: Client connected:");
-                    _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"remote (ip, port) = ({client.Client.RemoteEndPoint})");
+                    _logger.LogClientConnected(client.Client.RemoteEndPoint?.ToString() ?? "Uknown");
+
 
                     tasks.Add(
                     Task.Run(() =>
@@ -101,7 +101,15 @@ namespace ServerFramework.TCPServer
             using StreamReader sr = new(sock.GetStream());
             using StreamWriter sw = new(sock.GetStream());
 
-            TcpServerWork(sr, sw);
+            try
+            {
+                TcpServerWork(sr, sw);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error handlign client", ex);
+            }
+            
 
             sock?.Close();
         }
@@ -110,7 +118,7 @@ namespace ServerFramework.TCPServer
         {
             TcpListener listener = new(IPAddress.Any, STOPPORT);
             listener.Start();
-            _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"Stop server started at port {STOPPORT}");
+            _logger.LogStopServerStart(STOPPORT);
 
             while (true)
             {
@@ -120,6 +128,7 @@ namespace ServerFramework.TCPServer
 
                 if (!string.IsNullOrEmpty(command) && command == "stop")
                 {
+                    _logger.LogInfo("Stop command received, shutting down server");
                     _running = false;
                     return;
                 }

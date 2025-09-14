@@ -11,7 +11,7 @@ namespace ServerFramework.Logging
     {
         static MyLogger instance;
 
-        public TraceSource Ts;
+        private TraceSource _ts;
         private TraceListener _consoleListener;
         private TraceListener _textListener;
         private TraceListener _xmlListener;
@@ -21,8 +21,8 @@ namespace ServerFramework.Logging
         private MyLogger()
         {
             //Initialization of the tracesource and sourceswitch
-            Ts = new TraceSource("Server Logger", SourceLevels.All);
-            Ts.Switch = new SourceSwitch("log", SourceLevels.All.ToString());
+            _ts = new TraceSource("Server Logger", SourceLevels.All);
+            _ts.Switch = new SourceSwitch("log", SourceLevels.All.ToString());
 
             //Initialization of the tracelisteners
             _consoleListener = new ConsoleTraceListener();
@@ -34,10 +34,10 @@ namespace ServerFramework.Logging
             _xmlListener.Filter = new EventTypeFilter(SourceLevels.Warning);
 
             //Adding the tracelisteners to the tracesource
-            Ts.Listeners.Add(_consoleListener);
-            Ts.Listeners.Add(_textListener);
-            Ts.Listeners.Add(_xmlListener);
-            Ts.Listeners.Add(_eventLogListener);
+            _ts.Listeners.Add(_consoleListener);
+            _ts.Listeners.Add(_textListener);
+            _ts.Listeners.Add(_xmlListener);
+            _ts.Listeners.Add(_eventLogListener);
         }
 
         public static MyLogger Instance()
@@ -48,6 +48,59 @@ namespace ServerFramework.Logging
             }
         
             return instance;
+        }
+
+        // Wrapper methods for different log levels
+        public void LogInfo(string message)
+        {
+            _ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: {message}");
+        }
+
+        public void LogWarning(string message)
+        {
+            _ts.TraceEvent(TraceEventType.Warning, 10, $"{DateTime.Now}: {message}");
+        }
+
+        public void LogError(string message)
+        {
+            _ts.TraceEvent(TraceEventType.Error, 15, $"{DateTime.Now}: {message}");
+        }
+
+        public void LogError(string message, Exception ex)
+        {
+            _ts.TraceEvent(TraceEventType.Error, 15, $"{DateTime.Now}: {message} - Exception: {ex.Message}");
+        }
+
+        public void LogCritical(string message)
+        {
+            _ts.TraceEvent(TraceEventType.Critical, 20, $"{DateTime.Now}: {message}");
+        }
+
+        public void LogVerbose(string message)
+        {
+            _ts.TraceEvent(TraceEventType.Verbose, 1, $"{DateTime.Now}: {message}");
+        }
+
+        // Server-specific logging methods
+        public void LogServerStart(string serverName, int port)
+        {
+            LogInfo($"{serverName} started at port: {port}");
+        }
+
+        public void LogClientConnected(string remoteEndPoint)
+        {
+            LogInfo($"Client connected: remote (ip, port) = ({remoteEndPoint})");
+        }
+
+        public void LogStopServerStart(int stopPort)
+        {
+            LogInfo($"Stop server started at port {stopPort}");
+        }
+
+        // Flush method
+        public void Flush()
+        {
+            _ts.Flush();
         }
     }
 }
