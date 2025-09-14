@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ServerFramework.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -21,29 +22,11 @@ namespace ServerFramework.TCPServer
 
         private bool _running = true;
 
-        protected TraceSource _ts;
-        private TraceListener _consoleListener;
-        private TraceListener _textListener;
-        private TraceListener _xmlListener;
-        private TraceListener _eventLogListener;
+        protected MyLogger _logger = MyLogger.Instance();
 
         /// <param name="configFile">A configuration file containing information regarding the ports and servername</param>
         public AbstractTCPServer(string configFile) 
         {
-            _ts = new TraceSource("Server Logger", SourceLevels.All);
-            _ts.Switch = new SourceSwitch("log", SourceLevels.All.ToString());
-
-            _consoleListener = new ConsoleTraceListener();
-            _textListener = new TextWriterTraceListener("textlog.txt");
-            _textListener.Filter = new EventTypeFilter(SourceLevels.Warning);
-            _xmlListener = new XmlWriterTraceListener("xmllog.txt");
-            _eventLogListener = new EventLogTraceListener("application");
-
-            _ts.Listeners.Add(_consoleListener);
-            _ts.Listeners.Add(_textListener);
-            _ts.Listeners.Add(_xmlListener);
-            _ts.Listeners.Add(_eventLogListener);
-
             XmlDocument configDoc = new XmlDocument();
             configDoc.Load(configFile);
 
@@ -76,20 +59,20 @@ namespace ServerFramework.TCPServer
             TcpListener listener = new(IPAddress.Any, PORT);
             listener.Start();
 
-            _ts.TraceEvent(TraceEventType.Information, 5, $"{_serverName}");
-            _ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: {_serverName} started at port: {PORT}");
+            _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"{_serverName}");
+            _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: {_serverName} started at port: {PORT}");
 
             Task.Run(StopServer);
 
             List<Task> tasks = new List<Task>();
             while (_running)
             {
-                _ts.Flush();
+                _logger.Ts.Flush();
                 if (listener.Pending())
                 {
                     TcpClient client = listener.AcceptTcpClient();
-                    _ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: Client connected:");
-                    _ts.TraceEvent(TraceEventType.Information, 5, $"remote (ip, port) = ({client.Client.RemoteEndPoint})");
+                    _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"{DateTime.Now}: Client connected:");
+                    _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"remote (ip, port) = ({client.Client.RemoteEndPoint})");
 
                     tasks.Add(
                     Task.Run(() =>
@@ -127,7 +110,7 @@ namespace ServerFramework.TCPServer
         {
             TcpListener listener = new(IPAddress.Any, STOPPORT);
             listener.Start();
-            _ts.TraceEvent(TraceEventType.Information, 5, $"Stop server started at port {STOPPORT}");
+            _logger.Ts.TraceEvent(TraceEventType.Information, 5, $"Stop server started at port {STOPPORT}");
 
             while (true)
             {

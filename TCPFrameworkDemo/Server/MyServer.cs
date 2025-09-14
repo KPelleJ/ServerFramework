@@ -19,7 +19,7 @@ namespace TCPFrameworkDemo.Server
         protected override void TcpServerWork(StreamReader reader, StreamWriter writer)
         {
             writer.AutoFlush = true;
-            _ts.TraceEvent(TraceEventType.Warning, 4, $"{DateTime.Now}: Handling new client");
+            _logger.Ts.TraceEvent(TraceEventType.Warning, 4, $"{DateTime.Now}: Handling new client");
             
             string? msg = reader.ReadLine();
 
