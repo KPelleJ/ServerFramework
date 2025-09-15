@@ -12,10 +12,7 @@ namespace ServerFramework.Logging
         static MyLogger instance;
 
         private TraceSource _ts;
-        private TraceListener _consoleListener;
         private TraceListener _textListener;
-        private TraceListener _xmlListener;
-        private TraceListener _eventLogListener;
 
         
         private MyLogger()
@@ -24,20 +21,9 @@ namespace ServerFramework.Logging
             _ts = new TraceSource("Server Logger", SourceLevels.All);
             _ts.Switch = new SourceSwitch("log", SourceLevels.All.ToString());
 
-            //Initialization of the tracelisteners
-            _consoleListener = new ConsoleTraceListener();
-            _textListener = new TextWriterTraceListener("textlog.txt");
-            _xmlListener = new XmlWriterTraceListener("xmllog.txt");
-            _eventLogListener = new EventLogTraceListener("application");
-
-            //Setup of filters for the listeners
-            _xmlListener.Filter = new EventTypeFilter(SourceLevels.Warning);
-
-            //Adding the tracelisteners to the tracesource
-            _ts.Listeners.Add(_consoleListener);
-            _ts.Listeners.Add(_textListener);
-            _ts.Listeners.Add(_xmlListener);
-            _ts.Listeners.Add(_eventLogListener);
+            //Initialization of a TextWriterListener as default
+            AddTextWriterListener("mylog.txt");
+            AddFilterToListener(ListenerType.TextWriter, SourceLevels.All);
         }
 
         public static MyLogger Instance()
@@ -101,6 +87,49 @@ namespace ServerFramework.Logging
         public void Flush()
         {
             _ts.Flush();
+        }
+
+        // Methods to add TraceListeners
+        public void AddConsoleListener()
+        {
+            _ts.Listeners.Add(new ConsoleTraceListener());
+        }
+
+        public void AddXmlListener(string logFilePath)
+        {
+            _ts.Listeners.Add(new XmlWriterTraceListener(logFilePath));
+        }
+
+        public void AddTextWriterListener(string logFilePath)
+        {
+            _ts.Listeners.Add(new TextWriterTraceListener(logFilePath));
+        }
+
+        public void AddEventLogListener(string logName = "Application")
+        {
+            _ts.Listeners.Add(new EventLogTraceListener(logName));
+        }
+
+        // Method to add Trace filters
+        public void AddFilterToListener(ListenerType listenerType, SourceLevels sourceLevel)
+        {
+            foreach (TraceListener listener in _ts.Listeners)
+            {
+                bool shouldAddFilter = listenerType switch
+                {
+                    ListenerType.Console => listener is ConsoleTraceListener,
+                    ListenerType.Xml => listener is XmlWriterTraceListener,
+                    ListenerType.TextWriter => listener is TextWriterTraceListener,
+                    ListenerType.EventLog => listener is EventLogTraceListener,
+                    ListenerType.All => true,
+                    _ => false
+                };
+
+                if (shouldAddFilter)
+                {
+                    listener.Filter = new EventTypeFilter(sourceLevel);
+                }
+            }
         }
     }
 }

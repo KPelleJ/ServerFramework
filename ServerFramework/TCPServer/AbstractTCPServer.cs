@@ -27,6 +27,7 @@ namespace ServerFramework.TCPServer
         /// <param name="configFile">A configuration file containing information regarding the ports and servername</param>
         public AbstractTCPServer(string configFile) 
         {
+            // Setting up server configuration from configfile
             XmlDocument configDoc = new XmlDocument();
             configDoc.Load(configFile);
 
@@ -47,6 +48,14 @@ namespace ServerFramework.TCPServer
             { 
                 _serverName = serverNameNode.InnerText;
             }
+
+            // Setting up logging from MyLogger class
+            _logger.AddConsoleListener();
+            _logger.AddFilterToListener(ListenerType.Console, SourceLevels.All);
+            _logger.AddXmlListener("mylog.xml");
+            _logger.AddFilterToListener(ListenerType.Xml, SourceLevels.All);
+            _logger.AddEventLogListener();
+            _logger.AddFilterToListener(ListenerType.EventLog, SourceLevels.Warning);
         }
 
         /// <summary>
